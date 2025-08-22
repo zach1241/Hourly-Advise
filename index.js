@@ -1,14 +1,15 @@
 const express = require("express");
 const app = express();
-const port = 3000;
+
+// Use Render's dynamic port or default to 3000
+const port = process.env.PORT || 3000;
 
 app.set("view engine", "ejs");
 
 app.get("/", (req, res) => {
   const now = new Date();
-  const hour = now.getHours(); // 0 = midnight, 23 = 11pm
+  const hour = now.getHours();
 
-  // 24-hour advice list
   const adviceList = [
     "Midnight: Time to rest and recharge your energy 🌙",
     "1 AM: Quiet hour — reflect or sleep well 😴",
@@ -37,10 +38,9 @@ app.get("/", (req, res) => {
   ];
 
   const advice = adviceList[hour];
-
   res.render("index", { advice, hour });
 });
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
 });

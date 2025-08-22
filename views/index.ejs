@@ -1,85 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hourly Advice</title>
-    <style>
-      /* === Reset === */
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hourly Advice</title>
+  <style>
+    /* === Reset & general styles === */
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      min-height: 100vh;
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+    }
+    .container {
+      background: rgba(0,0,0,0.35);
+      padding: 2rem 3rem;
+      border-radius: 20px;
+      text-align: center;
+      max-width: 600px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    h1 { font-size: 2.2rem; margin-bottom: 1rem; }
+    h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #ffd369; }
+    p { font-size: 1.2rem; line-height: 1.6; }
+    .refresh-btn {
+      margin-top: 1.5rem;
+      display: inline-block;
+      background: #ffd369;
+      color: #333;
+      padding: 0.6rem 1.2rem;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    .refresh-btn:hover { background: #ffb347; }
 
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: #fff;
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
+    /* === Overlay === */
+    #timezone-overlay {
+      position: fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #timezone-overlay .overlay-content {
+      background: #222;
+      padding: 2rem;
+      border-radius: 15px;
+      text-align: center;
+      max-width: 400px;
+    }
+    select {
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      border: none;
+      margin-top: 1rem;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.5rem 1.5rem;
+      border: none;
+      border-radius: 15px;
+      background: #ffd369;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🕒 Hourly Advice</h1>
+    <h2 id="current-hour">--:--</h2>
+    <p id="advice"><%= advice %></p>
+    <a href="/" class="refresh-btn">🔄 Refresh</a>
+    <footer>Powered by Express & EJS | Stay motivated ✨</footer>
+  </div>
 
-      .container {
-        background: rgba(0, 0, 0, 0.35);
-        padding: 2rem 3rem;
-        border-radius: 20px;
-        text-align: center;
-        max-width: 600px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-      }
-
-      h1 {
-        font-size: 2.2rem;
-        margin-bottom: 1rem;
-        letter-spacing: 1px;
-      }
-
-      h2 {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        color: #ffd369;
-      }
-
-      p {
-        font-size: 1.2rem;
-        line-height: 1.6;
-      }
-
-      footer {
-        margin-top: 2rem;
-        font-size: 0.85rem;
-        opacity: 0.8;
-      }
-
-      .refresh-btn {
-        margin-top: 1.5rem;
-        display: inline-block;
-        background: #ffd369;
-        color: #333;
-        padding: 0.6rem 1.2rem;
-        border-radius: 30px;
-        text-decoration: none;
-        font-weight: bold;
-        transition: 0.3s;
-      }
-
-      .refresh-btn:hover {
-        background: #ffb347;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>🕒 Hourly Advice</h1>
-      <h2>It’s <%= hour %>:00</h2>
-      <p><%= advice %></p>
-
-      <a href="/" class="refresh-btn">🔄 Refresh</a>
-
-      <footer>Powered by Express & EJS | Stay motivated ✨</footer>
+  <!-- Overlay for Timezone Selection -->
+  <div id="timezone-overlay">
+    <div class="overlay-content">
+      <h2>Select Your Timezone</h2>
+      <select id="timezone-select">
+        <!-- Sample common timezones, can add more -->
+        <option value="Africa/Johannesburg">South Africa (GMT+2)</option>
+        <option value="America/New_York">New York (EST)</option>
+        <option value="Europe/London">London (GMT)</option>
+        <option value="Asia/Tokyo">Tokyo (JST)</option>
+        <option value="Australia/Sydney">Sydney (AEST)</option>
+      </select>
+      <br/>
+      <button id="set-timezone-btn">Set Timezone</button>
     </div>
-  </body>
+  </div>
+
+  <script>
+    const overlay = document.getElementById("timezone-overlay");
+    const adviceEl = document.getElementById("advice");
+    const hourEl = document.getElementById("current-hour");
+
+    const adviceList = [
+      "Midnight: Time to rest and recharge your energy 🌙",
+      "1 AM: Quiet hour — reflect or sleep well 😴",
+      "2 AM: Deep rest — your brain restores itself 🧠",
+      "3 AM: Still asleep? Your body is healing 🛌",
+      "4 AM: Early risers start their day 🌄",
+      "5 AM: Great time for meditation or a jog 🏃‍♂️",
+      "6 AM: Sunrise energy, set intentions ☀️",
+      "7 AM: Fuel up with a healthy breakfast 🥣",
+      "8 AM: Focus on your most important task 📈",
+      "9 AM: Stay productive — momentum is building 💪",
+      "10 AM: Peak brain power, handle tough work 🧮",
+      "11 AM: Wrap up morning goals 🎯",
+      "12 PM: Take a lunch break and recharge 🍲",
+      "13 PM: Ease back into work — stay sharp 🖥️",
+      "14 PM: Afternoon slump? Move and hydrate 💧",
+      "15 PM: Coffee boost time ☕",
+      "16 PM: Review tasks and wrap up projects 📋",
+      "17 PM: End work, start winding down 🔑",
+      "18 PM: Spend time with family or hobbies 👨‍👩‍👧‍👦",
+      "19 PM: Enjoy dinner, relax 🍽️",
+      "20 PM: Light exercise or reading 📚",
+      "21 PM: Reflect on the day, gratitude practice 🙏",
+      "22 PM: Start preparing for sleep 💤",
+      "23 PM: Wind down, relax, and rest 🌌"
+    ];
+
+    document.getElementById("set-timezone-btn").addEventListener("click", () => {
+      const timezone = document.getElementById("timezone-select").value;
+      overlay.style.display = "none";
+
+      // Update advice based on selected timezone
+      const updateAdvice = () => {
+        const now = new Date();
+        // Convert local time to selected timezone
+        const options = { timeZone: timezone, hour12: false, hour: '2-digit' };
+        const hour = parseInt(new Intl.DateTimeFormat('en-US', options).format(now));
+        hourEl.textContent = `${hour}:00`;
+        adviceEl.textContent = adviceList[hour];
+      }
+
+      updateAdvice();
+      // Refresh every minute
+      setInterval(updateAdvice, 60000);
+    });
+  </script>
+</body>
 </html>
